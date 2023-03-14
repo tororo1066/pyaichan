@@ -3,58 +3,9 @@ import gensim
 import keras
 import numpy as np
 from keras.layers import LSTM, Dense, Embedding
-from keras.utils import pad_sequences
 from tensorflow.python.framework.ops import disable_eager_execution
 
 disable_eager_execution()
-
-def test_2():
-    word_index = {}
-    index_word = {}
-
-    question = gensim.models.Word2Vec.load("wordChanger/output/question/model.bin")
-    answer = gensim.models.Word2Vec.load("wordChanger/output/answer/model.bin")
-    question_list = list(question.wv.key_to_index)
-    answer_list = list(answer.wv.key_to_index)
-    q_vocab_size = len(question_list)
-    a_vocab_size = len(answer_list)
-    question_matrix = np.zeros((q_vocab_size, 100))
-    answer_matrix = np.zeros((a_vocab_size, 100))
-
-    print(len(question.wv.key_to_index))
-    print(len(answer.wv.key_to_index))
-
-    for i, word in enumerate(question_list):
-        print(word)
-        embedding_vector = question.wv[word]
-        question_matrix[i] = embedding_vector
-        word_index[word] = i
-        index_word[i] = word
-        print(str(i) + " / " + str(q_vocab_size))
-
-    for i, word in enumerate(answer_list):
-        print(word)
-        embedding_vector = answer.wv[word]
-        answer_matrix[i] = embedding_vector
-        word_index[word] = i
-        index_word[i] = word
-        print(str(i) + " / " + str(a_vocab_size))
-
-    question_len = len(question_matrix)
-    answer_len = len(answer_matrix)
-    if question_len != answer_len:
-        if question_len > answer_len:
-            new_zeros = np.zeros((len(question_matrix), 100))
-            new_zeros[:answer_matrix.shape[0], :] = answer_matrix
-            answer_matrix = new_zeros
-        else:
-            new_zeros = np.zeros((len(answer_matrix), 100))
-            new_zeros[:question_matrix.shape[0], :] = question_matrix
-            question_matrix = new_zeros
-
-    print(question_matrix.shape)
-    print(answer_matrix.shape)
-
 
 def test_func():
     embedding_dim = 100  # 埋め込みベクトルの次元数
@@ -87,6 +38,8 @@ def test_func():
     model.add(LSTM(units=64))
     model.add(Dense(units=vocab_size, activation='softmax'))
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    # ここからがうまくいかない
 
     question = gensim.models.Word2Vec.load("wordChanger/output/question/model.bin")
     answer = gensim.models.Word2Vec.load("wordChanger/output/answer/model.bin")
@@ -128,7 +81,7 @@ def test_func():
     print("aaa")
     print(question_matrix.shape)
     print(answer_matrix.shape)
-    model.fit((question_matrix, answer_matrix), epochs=10, batch_size=64)
+    model.fit((question_matrix, answer_matrix), epochs=10, batch_size=64) # ここでエラー
     print("bbb")
 
 
