@@ -8,14 +8,42 @@ from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
 from numpy import ndarray
 from tensorflow.python.framework.ops import disable_eager_execution
+import tensorflow_datasets as tfds
 from sklearn.model_selection import train_test_split
+import transformers
 
 disable_eager_execution()
 
 def test_func():
     embedding_dim = 100  # 埋め込みベクトルの次元数
 
-    bins = gensim.models.Word2Vec.load("wordChanger/output/wikipedia/model.bin")
+    tororo = []
+    tororo_answer = []
+
+    with open("wordChanger/input/tororo.txt", "r", encoding="utf-8") as f:
+        data = f.read()
+        for line in data.split("\n"):
+            tororo.append(line)
+
+    with open("wordChanger/input/tororo_answer.txt", "r", encoding="utf-8") as f:
+        data = f.read()
+        for line in data.split("\n"):
+            tororo_answer.append(line)
+
+    num_lines = len(tororo) - 1
+
+    id2line = {}
+    for i in range(num_lines):
+        id2line[i] = tororo[i]
+
+    conversations = []
+
+    for text in tororo_answer:
+        conversations.append(text)
+
+    tokenizer = tfds
+
+
 
     wordlist = list(bins.wv.key_to_index)
 

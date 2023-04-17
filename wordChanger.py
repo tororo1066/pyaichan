@@ -25,6 +25,8 @@ def model_func():
         sentences.append(tagger.parse(line).strip().split(" "))
         print(str(index) + " / " + str(length))
 
+    print(sentences)
+
     # Word2Vecの学習
     model = word2vec.Word2Vec(sentences, window=5, min_count=1, workers=4, vector_size=100)
 
