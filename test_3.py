@@ -1,6 +1,6 @@
 import os
-from typing import Any
 
+import keras.utils
 import numpy as np
 import tensorflow as tf
 from keras.preprocessing.text import Tokenizer
@@ -19,7 +19,7 @@ target_texts = []
 
 physical_devices = tf.config.list_physical_devices('GPU')
 if len(physical_devices) > 0:
-    print("GPUを使用します。")
+    print("Using gpu.")
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # データの読み込み
@@ -66,17 +66,19 @@ decoder_embedding = tf.keras.layers.Embedding(len(target_tokenizer.word_index) +
 decoder_lstm = tf.keras.layers.LSTM(latent_dim, return_sequences=True, return_state=True)
 decoder_outputs, _, _ = decoder_lstm(decoder_embedding, initial_state=encoder_states)
 
-dense_layer_1 = tf.keras.layers.Dense(latent_dim, activation=tf.nn.relu)(decoder_outputs)
 decoder_dense = tf.keras.layers.Dense(len(target_tokenizer.word_index) + 1, activation=tf.nn.softmax)
 
-decoder_outputs = decoder_dense(dense_layer_1)
+decoder_outputs = decoder_dense(decoder_outputs)
 
 model = tf.keras.models.Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
+model.compile(optimizer=tf.keras.optimizers.Adam(), loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
 model.summary()
 
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss='categorical_crossentropy',
-              metrics=['accuracy'])
+keras.utils.plot_model(model)
+
 
 checkpoint_path = "test_3/training_1/cp{epoch:04d}.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
@@ -86,8 +88,8 @@ latest = tf.train.latest_checkpoint(checkpoint_dir)
 if latest is not None:
     model.load_weights(latest)
 
-# model.fit([encoder_input_data, decoder_input_data], decoder_target_data, batch_size=batch_size, epochs=epochs,
-#           validation_split=0.2, callbacks=[cp_callback], initial_epoch=0, workers=8, use_multiprocessing=True)
+model.fit([encoder_input_data, decoder_input_data], decoder_target_data, batch_size=batch_size, epochs=epochs,
+          validation_split=0.2, callbacks=[cp_callback], initial_epoch=0, workers=8, use_multiprocessing=True)
 
 # evaluate, accuracy = model.evaluate([encoder_input_data, decoder_input_data], decoder_target_data,
 #                                     batch_size=batch_size)
@@ -107,7 +109,7 @@ decoder_model = tf.keras.models.Model([decoder_inputs] + decoder_states_inputs, 
 reverse_input_char_index = dict((i, char) for char, i in input_tokenizer.word_index.items())
 reverse_target_char_index = dict((i, char) for char, i in target_tokenizer.word_index.items())
 
-print(target_tokenizer.word_index.keys())
+print(target_tokenizer.word_index.items())
 
 
 def decode_sequence(input_seq):
@@ -120,9 +122,8 @@ def decode_sequence(input_seq):
 
     # Sampling loop for a batch of sequences
     # (to simplify, here we assume a batch of size 1).
-    stop_condition = False
     decoded_sentence = []
-    while not stop_condition:
+    while True:
         output_tokens, h, c = decoder_model.predict([target_seq] + states_value, verbose=0)
 
         # Sample a token
@@ -132,9 +133,8 @@ def decode_sequence(input_seq):
 
         # Exit condition: either hit max length
         # or find stop character.
-        if (sampled_char == '<END>' or
-                len(decoded_sentence) > max_target_len):
-            stop_condition = True
+        if sampled_char == '<END>' or len(decoded_sentence) > max_target_len:
+            break
 
         # Update the target sequence (of length 1).
         target_seq = np.zeros((1, 1))
